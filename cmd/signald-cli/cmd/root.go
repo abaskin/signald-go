@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"git.callpipe.com/finn/signald-go/signald"
+	"github.com/abaskin/signald-go/signald"
 )
 
 var cfgFile string

@@ -24,7 +24,7 @@ import (
 	"github.com/mdp/qrterminal"
 	"github.com/spf13/cobra"
 
-	"git.callpipe.com/finn/signald-go/signald"
+	"github.com/abaskin/signald-go/signald"
 )
 
 var uriOrQR bool

@@ -15,7 +15,7 @@
 
 package main
 
-import "git.callpipe.com/finn/signald-go/cmd/signald-cli/cmd"
+import "github.com/abaskin/signald-go/cmd/signald-cli/cmd"
 
 func main() {
 	cmd.Execute()

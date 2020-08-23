@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"git.callpipe.com/finn/signald-go/signald"
+	"github.com/abaskin/signald-go/signald"
 )
 
 // listAccountsCmd represents the listAccounts command
@@ -32,8 +32,8 @@ var listAccountsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		requestID := fmt.Sprint("signald-cli-", rand.Intn(1000))
 		s.SendRequest(signald.Request{
-			Type:     "list_accounts",
-			ID:       requestID,
+			Type: "list_accounts",
+			ID:   requestID,
 		})
 
 		c := make(chan signald.Response)

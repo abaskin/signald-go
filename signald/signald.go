@@ -100,9 +100,9 @@ func (s *Signald) ListenFor(stopID string) (Response, error) {
 			return Response{}, s.MakeError(message.Error)
 		}
 
-		msg.ID = message.JSON["id"].(string)
+		msg.ID = fmt.Sprintf("%s", message.JSON["id"])
 		if msg.ID == stopID {
-			msg.Type = message.JSON["type"].(string)
+			msg.Type = fmt.Sprintf("%s", message.JSON["type"])
 
 			msgData, haveData := message.JSON["data"]
 			jsonData, _ := json.Marshal(msgData)

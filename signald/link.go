@@ -22,10 +22,11 @@ import (
 )
 
 // Link represents the link command
-func (s *Signald) Link(uriOrQR bool) (Response, error) {
+func (s *Signald) Link(deviceName string, uriOrQR bool) (Response, error) {
 	message, err := s.SendAndListen(Request{
-		Type: "link",
-		ID:   fmt.Sprintf("%t-signald-go-%s", uriOrQR, xid.New().String()),
+		Type:       "link",
+		DeviceName: deviceName,
+		ID:         fmt.Sprintf("%t-signald-go-%s", uriOrQR, xid.New().String()),
 	}, []string{"linking_successful"})
 
 	return message, err

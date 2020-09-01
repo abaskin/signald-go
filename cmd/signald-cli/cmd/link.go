@@ -19,6 +19,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var deviceName string
+
 var uriOrQR bool
 
 // linkCmd represents the link command
@@ -27,7 +29,7 @@ var linkCmd = &cobra.Command{
 	Short: "Link to an existing Signal account",
 	Long:  `Get a URI or QR code to link to an existing Signal account`,
 	Run: func(cmd *cobra.Command, args []string) {
-		message, err := s.Link(uriOrQR)
+		message, err := s.Link(deviceName, uriOrQR)
 
 		handleReturn(message, err, "")
 	},
@@ -35,5 +37,8 @@ var linkCmd = &cobra.Command{
 
 func init() {
 	RootCmd.AddCommand(linkCmd)
+
+	linkCmd.Flags().StringVarP(&deviceName, "deviceName", "d", "", "The device name")
+	linkCmd.MarkFlagRequired("deviceName")
 	linkCmd.Flags().BoolVarP(&uriOrQR, "uri", "u", false, "Print a URI instead of a QR code")
 }

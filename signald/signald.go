@@ -195,21 +195,36 @@ func (s *Signald) SendRequest(request Request) (string, error) {
 
 // SendAndListen sends a request to signald, listens for the response and returns it
 func (s *Signald) SendAndListen(request Request, success []string) (Response, error) {
+	var err error
+
+	defer func() {
+		if r := recover(); r != nil {
+			if err != nil {
+				err = s.MakeError(r)
+			}
+		}
+	}()
+
 	if s.socket == nil {
-		if err := s.Connect(); err != nil {
-			return Response{}, s.MakeError(err)
+		if err = s.Connect(); err != nil {
+			err = s.MakeError(err)
+			return Response{}, err
 		}
 		defer s.Disconnect()
 	}
 
-	requestID, err := s.SendRequest(request)
+	requestID := ""
+	requestID, err = s.SendRequest(request)
 	if err != nil {
-		return Response{}, s.MakeError(err)
+		err = s.MakeError(err)
+		return Response{}, err
 	}
 
-	message, err := s.ListenFor(requestID)
+	message := Response{}
+	message, err = s.ListenFor(requestID)
 	if err != nil {
-		return message, s.MakeError(err)
+		err = s.MakeError(err)
+		return Response{}, err
 	}
 
 	for _, s := range success {
@@ -218,7 +233,8 @@ func (s *Signald) SendAndListen(request Request, success []string) (Response, er
 		}
 	}
 
-	return message, s.MakeError(message)
+	err = s.MakeError(message)
+	return message, err
 }
 
 // verbose print log message if Verbose is set taking into account JsonStatus

@@ -141,8 +141,8 @@ func (s *Signald) ListenFor(stopID string) (Response, error) {
 					b.Reset()
 					qrterminal.Generate(string(jsonData), qrterminal.M, b)
 				}
-				fmt.Println(b.String())
-				continue
+				msg.Data.StatusMessage.Error = false
+				msg.Data.StatusMessage.Message = b.String()
 
 			case
 				"verification_required",

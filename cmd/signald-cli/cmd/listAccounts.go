@@ -17,36 +17,27 @@ package cmd
 
 import (
 	"fmt"
-	"math/rand"
+	"strings"
 
 	"github.com/spf13/cobra"
-
-	"github.com/abaskin/signald-go/signald"
 )
 
 // listAccountsCmd represents the listAccounts command
 var listAccountsCmd = &cobra.Command{
 	Use:   "listAccounts",
-	Short: "list of all the accounts registered to this signald instance.",
-	Long:  `Prints a list of all users to stdout.`,
+	Short: "List of all accounts registered to this signald instance",
+	Long:  `Prints a list of all accounts registered to this signald instance`,
 	Run: func(cmd *cobra.Command, args []string) {
-		requestID := fmt.Sprint("signald-cli-", rand.Intn(1000))
-		s.SendRequest(signald.Request{
-			Type: "list_accounts",
-			ID:   requestID,
-		})
+		message, err := s.ListAccounts()
 
-		c := make(chan signald.Response)
-		go s.Listen(c)
-		for {
-			message := <-c
-			if message.ID == requestID {
-				for _, account := range message.Data.Accounts {
-					fmt.Println(account.Username)
-				}
-				break
-			}
+		accounts := []string{}
+		for _, a := range message.Data.Accounts {
+			accounts = append(accounts, fmt.Sprintf(
+				"Username: %s DeviceID %d Filename %s Registered %t Subscribed %t HasKeys %t",
+				a.Username, a.DeviceID, a.Filename, a.Registered, a.Subscribed, a.HasKeys))
 		}
+
+		handleReturn(message, err, strings.Join(accounts, "\n"))
 	},
 }
 

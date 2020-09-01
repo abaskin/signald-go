@@ -20,20 +20,29 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/abaskin/signald-go/signald"
 )
 
-var cfgFile string
-var socketPath string
-var s *signald.Signald
+var (
+	socketPath string
+	statusJSON bool
+	verbose    bool
+	s          *signald.Signald
+)
 
 // RootCmd represents the base command when called without any subcommands
 var RootCmd = &cobra.Command{
 	Use:   "signald-cli",
-	Short: "Interact with a running siangld instance",
+	Short: "Interact with a running signald instance",
 	Long:  `signald-cli is a command line tool to interact with signald.`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		s = &signald.Signald{
+			SocketPath: socketPath,
+			Verbose:    verbose,
+			StatusJSON: statusJSON,
+		}
+	},
 }
 
 // Execute adds all child commands to the root command sets flags appropriately.
@@ -46,25 +55,7 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.signald-cli.yaml)")
 	RootCmd.PersistentFlags().StringVarP(&socketPath, "socket", "s", "/var/run/signald/signald.sock", "the path to the signald socket file")
-	s = &signald.Signald{SocketPath: socketPath}
-	s.Connect()
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" { // enable ability to specify config file via flag
-		viper.SetConfigFile(cfgFile)
-	}
-
-	viper.SetConfigName(".signald-cli") // name of config file (without extension)
-	viper.AddConfigPath("$HOME")        // adding home directory as first search path
-	viper.AutomaticEnv()                // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
+	RootCmd.PersistentFlags().BoolVarP(&statusJSON, "json", "j", false, "return the results of the command as a JSON array")
+	RootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", false, "provide verbose logging")
 }

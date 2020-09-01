@@ -16,38 +16,42 @@
 package cmd
 
 import (
+	"bytes"
+	"encoding/csv"
 	"fmt"
-	"math/rand"
+	"strings"
 
 	"github.com/spf13/cobra"
-
-	"github.com/abaskin/signald-go/signald"
 )
 
 // listGroupsCmd represents the listGroups command
 var listGroupsCmd = &cobra.Command{
 	Use:   "listGroups",
-	Short: "list of all the groups that the user is in.",
-	Long:  `Prints a list of all groups the user is in to stdout.`,
+	Short: "List of all the groups of which the user is a member",
+	Long:  `Prints a list of all groups of which user is a member`,
 	Run: func(cmd *cobra.Command, args []string) {
-		requestID := fmt.Sprint("signald-cli-", rand.Intn(1000))
-		s.SendRequest(signald.Request{
-			Type:     "list_groups",
-			Username: username,
-			ID:       requestID,
-		})
+		message, err := s.ListGroups(username)
 
-		c := make(chan signald.Response)
-		go s.Listen(c)
-		for {
-			message := <-c
-			if message.ID == requestID {
-				for _, group := range message.Data.Groups {
-					fmt.Println(group.Name)
+		active := false
+		groups := []string{}
+		for _, group := range message.Data.Groups {
+			members := [][]string{}
+			for _, m := range group.Members {
+				members[0] = append(members[0], m.Number)
+				if username == m.Number {
+					active = true
 				}
-				break
 			}
+
+			b := new(bytes.Buffer)
+			csv.NewWriter(b).WriteAll(members)
+
+			groups = append(groups,
+				fmt.Sprintf("Id: %s Name: %s Active: %t Blocked: %t Members: %s",
+					group.GroupID, group.Name, active, false, b.String()))
 		}
+
+		handleReturn(message, err, strings.Join(groups, "\n"))
 	},
 }
 

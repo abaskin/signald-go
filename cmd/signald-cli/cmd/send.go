@@ -16,11 +16,13 @@
 package cmd
 
 import (
-	"log"
-
-	"github.com/spf13/cobra"
+	"encoding/csv"
+	"encoding/json"
+	"fmt"
+	"strings"
 
 	"github.com/abaskin/signald-go/signald"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -28,36 +30,48 @@ var (
 	toUser      string
 	toGroup     string
 	messageBody string
-	attachment  string
+	attach      string
+	quote       string
 )
 
 // sendCmd represents the send command
 var sendCmd = &cobra.Command{
 	Use:   "send",
-	Short: "send a message to another user or group",
-	Long:  `send a message to another user or group on Signal`,
+	Short: "Send a message to another user or group",
+	Long:  `Send a message to another user or group on Signal`,
 	Run: func(cmd *cobra.Command, args []string) {
-		request := signald.Request{
-			Type:     "send",
-			Username: username,
+		quoteObj := signald.RequestQuote{}
+		if err := json.Unmarshal([]byte(quote), &quoteObj); err != nil {
+			err = fmt.Errorf("Invalid Quote JSON: %w", err)
+			handleReturn(signald.Response{}, err, "")
 		}
 
-		if toUser != "" {
-			request.RecipientNumber = toUser
-		} else if toGroup != "" {
-			request.RecipientGroupID = toGroup
-		} else {
-			log.Fatal("--to or --group must be specified!")
+		attachments := []signald.RequestAttachment{}
+		attach = strings.TrimSpace(attach)
+		if strings.HasPrefix(attach, "[") && strings.HasSuffix(attach, "]") {
+			if err := json.Unmarshal([]byte(attach), &attachments); err != nil {
+				err = fmt.Errorf("Invalid Attachment JSON: %w", err)
+				handleReturn(signald.Response{}, err, "")
+			}
 		}
 
-		if messageBody != "" {
-			request.MessageBody = messageBody
+		if attach != "" && len(attachments) == 0 {
+			af, err := csv.NewReader(strings.NewReader(attach)).ReadAll()
+			if err != nil {
+				err = fmt.Errorf("Invalid Attachment File Path List: %w", err)
+				handleReturn(signald.Response{}, err, "")
+			}
+			for _, fileName := range af[0] {
+				attachments = append(attachments, signald.RequestAttachment{
+					Filename: fileName,
+				})
+			}
 		}
 
-		if attachment != "" {
-			request.AttachmentFilenames = []string{attachment}
-		}
-		s.SendRequest(request)
+		message, err := s.Send(username, signald.RequestAddress{Number: toUser},
+			toGroup, messageBody, attachments, quoteObj)
+
+		handleReturn(message, err, "")
 	},
 }
 
@@ -66,12 +80,18 @@ func init() {
 
 	sendCmd.Flags().StringVarP(&username, "username", "u", "", "The username to send from (required)")
 	sendCmd.MarkFlagRequired("username")
-
 	sendCmd.Flags().StringVarP(&toUser, "to", "t", "", "The user to send the message to (cannot be combined with --group)")
-
 	sendCmd.Flags().StringVarP(&toGroup, "group", "g", "", "The group to send the message to (cannot be combined with --to)")
-
 	sendCmd.Flags().StringVarP(&messageBody, "message", "m", "", "The text of the message to send")
-
-	sendCmd.Flags().StringVarP(&attachment, "attachment", "a", "", "A file to attach to the message")
+	sendCmd.Flags().StringVarP(&quote, "quote", "q", "{}", "A vaid signald quote JSON object, see the signald documation for the details")
+	sendCmd.Flags().StringVarP(&attach, "attachments", "a", "", `A list of file paths to attach to the message.
+	This can also be a valid JASON array (see below), only Filename is required.
+	[{
+		"Filename": "/tmp/file.bmp",
+		"Caption": "Some Caption",
+		"Width": 100,
+		"Height": 100,
+		"VoiceNote": false,
+		"Preview": true
+	}]`)
 }

@@ -16,50 +16,108 @@
 package signald
 
 /* The class in signald:
-class JsonRequest {
+
+public class JsonRequest {
     public String type;
     public String id;
     public String username;
     public String messageBody;
-    public String recipientNumber;
     public String recipientGroupId;
+    public JsonAddress recipientAddress;
     public Boolean voice;
     public String code;
     public String deviceName;
-    public List<String> attachmentFilenames;
+    public List<JsonAttachment> attachments;
     public String uri;
     public String groupName;
     public List<String> members;
     public String avatar;
+    public JsonQuote quote;
+    public int expiresInSeconds;
+    public String fingerprint;
+    public String trustLevel;
+    public ContactStore.ContactInfo contact;
+    public String captcha;
+    public String name;
+    public List<Long> timestamps;
+    public long when;
+    public JsonReaction reaction;
 
     JsonRequest() {}
 }
+
 */
 
 // Request represents a message sent to signald
 type Request struct {
-	Type                string       `json:"type"`
-	ID                  string       `json:"id,omitempty"`
-	Username            string       `json:"username,omitempty"`
-	MessageBody         string       `json:"messageBody,omitempty"`
-	RecipientNumber     string       `json:"recipientNumber,omitempty"`
-	RecipientGroupID    string       `json:"recipientGroupId,omitempty"`
-	Voice               bool         `json:"voice,omitempty"`
-	Code                string       `json:"code,omitempty"`
-	DeviceName          string       `json:"deviceName,omitempty"`
-	AttachmentFilenames []string     `json:"attachmentFilenames,omitempty"`
-	URI                 string       `json:"uri,omitempty"`
-	Attachments         []Attachment `json:"attachments,omitempty"`
-	GroupName           string       `json:"groupName,omitempty"`
-	Members             []string     `json:"members,omitempty"`
-	Avatar              string       `json:"avatar,omitempty"`
+	Type             string              `json:"type"`
+	ID               string              `json:"id,omitempty"`
+	Username         string              `json:"username,omitempty"`
+	MessageBody      string              `json:"messageBody,omitempty"`
+	RecipientAddress *RequestAddress     `json:"recipientAddress,omitempty"`
+	RecipientGroupID string              `json:"recipientGroupId,omitempty"`
+	Voice            bool                `json:"voice,omitempty"`
+	Code             string              `json:"code,omitempty"`
+	DeviceName       string              `json:"deviceName,omitempty"`
+	Attachments      []RequestAttachment `json:"attachments,omitempty"`
+	URI              string              `json:"uri,omitempty"`
+	GroupName        string              `json:"groupName,omitempty"`
+	Members          []string            `json:"members,omitempty"`
+	Avatar           string              `json:"avatar,omitempty"`
+	Quote            *RequestQuote       `json:"quote,omitempty"`
+	ExpiresInSeconds int                 `json:"expiresInSeconds,omitempty"`
+	Fingerprint      string              `json:"fingerprint,omitempty"`
+	TrustLevel       string              `json:"trustLevel,omitempty"`
+	Contact          *RequestContact     `json:"contact,omitempty"`
+	Captcha          string              `json:"captcha,omitempty"`
+	Name             string              `json:"name,omitempty"`
+	Timestamps       []int64             `json:"timestamps,omitempty"`
+	When             int64               `json:"when,omitempty"`
+	Reaction         *RequestReaction    `json:"reaction,omitempty"`
 }
 
-type Attachment struct {
-	Filename  string `json:"filename"`
-	Caption   string `json:"caption"`
-	Width     int    `json:"width"`
-	Height    int    `json:"height"`
-	VoiceNote bool   `json:"voiceNote"`
-	Preview   bool   `json:"preview"`
+// RequestAttachment to a message attachhment sent to signald
+type RequestAttachment struct {
+	Filename  string `json:"filename,omitempty"`
+	Caption   string `json:"caption,omitempty"`
+	Width     int    `json:"width,omitempty"`
+	Height    int    `json:"height,omitempty"`
+	VoiceNote bool   `json:"voiceNote,omitempty"`
+	Preview   bool   `json:"preview,omitempty"`
+}
+
+// RequestQuote to a message quote sent to signald
+type RequestQuote struct {
+	ID          int64                    `json:"id,omitempty"`
+	Author      RequestAddress           `json:"author,omitempty"`
+	Text        string                   `json:"text,omitempty"`
+	Attachments []RequestQuoteAttachment `json:"attachments,omitempty"`
+}
+
+// RequestQuoteAttachment to a message quote attachment sent to signald
+type RequestQuoteAttachment struct {
+	ContentType string            `json:"contentType,omitempty"`
+	FileName    string            `json:"fileName,omitempty"`
+	Thumbnail   RequestAttachment `json:"thumbnail,omitempty"`
+}
+
+// RequestContact contact info for a message sent to signald
+type RequestContact struct {
+	Number string `json:"number,omitempty"`
+	Name   string `json:"name,omitempty"`
+	Color  string `json:"color,omitempty"`
+}
+
+// RequestAddress address info for a message sent to signald
+type RequestAddress struct {
+	Number string `json:"number,omitempty"`
+	UUID   string `json:"uuid,omitempty"`
+}
+
+// RequestReaction reaction info
+type RequestReaction struct {
+	Emoji               string         `json:"emoji,omitempty"`
+	Remove              bool           `json:"remove,omitempty"`
+	TargetAuthor        RequestAddress `json:"targetAuthor,omitempty"`
+	TargetSentTimestamp int64          `json:"TargetSentTimestamp,omitempty"`
 }

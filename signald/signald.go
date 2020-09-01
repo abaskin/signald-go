@@ -16,59 +16,255 @@
 package signald
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
+	"runtime"
+	"strings"
+	"time"
+
+	"github.com/mdp/qrterminal"
+	"github.com/rs/xid"
 )
 
 // Signald is a connection to a signald instance.
 type Signald struct {
 	socket     net.Conn
 	SocketPath string
+	Verbose    bool
+	StatusJSON bool
+	LogJSON    []Response
 }
 
-func crash(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
-// Connect connects to the signad socket
+// Connect connects to the signald socket
 func (s *Signald) Connect() error {
-	if s.SocketPath == "" {
-		s.SocketPath = "/var/run/signald/signald.sock"
-	}
 	socket, err := net.Dial("unix", s.SocketPath)
 	if err != nil {
-		return err
+		s.verbose("Connect Error: " + err.Error())
+		return s.MakeError(err)
 	}
+
 	s.socket = socket
-	log.Print("Connected to signald socket ", socket.RemoteAddr().String())
+	s.verbose("Connected to signald socket " + s.socket.RemoteAddr().String())
+
+	return nil
+}
+
+// Disconnect disconnects from the signald socket
+func (s *Signald) Disconnect() error {
+	socketPath := s.socket.RemoteAddr().String()
+	if err := s.socket.Close(); err != nil {
+		s.verbose("Disconnect Error: " + err.Error())
+		return s.MakeError(err)
+	}
+
+	s.socket = nil
+	s.verbose("Disconnected from signald socket" + socketPath)
+
 	return nil
 }
 
 // Listen listens for events from signald
-func (s *Signald) Listen(c chan Response) error {
-	// we create a decoder that reads directly from the socket
+func (s *Signald) Listen(c chan RawResponse) {
 	d := json.NewDecoder(s.socket)
 
-	var msg Response
+	message := RawResponse{}
 
 	for {
-		if err := d.Decode(&msg); err != nil {
-			return err
+		if message.Error = d.Decode(&message.JSON); message.Error != nil {
+			s.MakeError(message.Error)
 		}
-		c <- msg
+
+		c <- message
+
+		if message.Error != nil {
+			return
+		}
+	}
+}
+
+// ListenFor listens for events from signald, stops when ID is found and
+// populates the returned Response object as required
+func (s *Signald) ListenFor(stopID string) (Response, error) {
+	cs := make(chan RawResponse)
+	go s.Listen(cs)
+
+	for {
+		msg := Response{}
+
+		message := <-cs
+
+		if message.Error != nil {
+			return Response{}, s.MakeError(message.Error)
+		}
+
+		msg.ID = message.JSON["id"].(string)
+		if msg.ID == stopID {
+			msg.Type = message.JSON["type"].(string)
+
+			msgData, haveData := message.JSON["data"]
+			jsonData, _ := json.Marshal(msgData)
+
+			switch msg.Type {
+			case "send_results":
+				json.Unmarshal(jsonData, &msg.Data.SendResults)
+
+			case "user":
+				json.Unmarshal(jsonData, &msg.Data.UserDetails)
+
+			case "account_list":
+				json.Unmarshal(jsonData, &msg.Data.Accounts)
+
+			case "contact_list":
+				json.Unmarshal(jsonData, &msg.Data.Contacts)
+
+			case "group_list":
+				json.Unmarshal(jsonData, &msg.Data.Groups)
+
+			case "identities":
+				json.Unmarshal(jsonData, &msg.Data.Identities)
+
+			case "profile":
+				json.Unmarshal(jsonData, &msg.Data.Profile)
+
+			case
+				"profile_not_available",
+				"user_not_registered":
+				return msg, s.MakeError(msg.Type)
+
+			case "linking_uri":
+				json.Unmarshal(jsonData, &msg.Data)
+				b := bytes.NewBufferString(string(jsonData))
+				if strings.HasPrefix(msg.ID, "false") {
+					b.Reset()
+					qrterminal.Generate(string(jsonData), qrterminal.M, b)
+				}
+				fmt.Println(b.String())
+				continue
+
+			case
+				"verification_required",
+				"verification_succeeded",
+				"linking_successful":
+				json.Unmarshal(jsonData, &msg.Data.Accounts[0])
+
+			case
+				"unexpected_error",
+				"input_error",
+				"trust_failed",
+				"update_contact_error",
+				"linking_error":
+				json.Unmarshal(jsonData, &msg.Data.StatusMessage)
+				return msg, s.MakeError(msg)
+
+			case "error":
+				msg.Data.StatusMessage.Error = true
+				msg.Data.StatusMessage.Message = msgData.(string)
+				return msg, s.MakeError(msg)
+
+			default:
+				if haveData {
+					json.Unmarshal(jsonData, &msg.Data.StatusMessage)
+				}
+			}
+
+			return msg, nil
+		}
 	}
 }
 
 // SendRequest sends a request to signald. Mostly used interally.
-func (s *Signald) SendRequest(request Request) error {
-	b, err := json.Marshal(request)
-	if err != nil {
-		return err
+func (s *Signald) SendRequest(request Request) (string, error) {
+	if request.ID == "" {
+		request.ID = "signald-go-" + xid.New().String()
 	}
-	log.Print("Sending ", string(b))
-	e := json.NewEncoder(s.socket)
-	return e.Encode(request)
+
+	s.verbose("Request ID: " + request.ID)
+
+	b, err := json.Marshal(request)
+	if err == nil {
+		s.verbose("Sending " + string(b))
+
+		err = json.NewEncoder(s.socket).Encode(request)
+	}
+
+	return request.ID, err
+}
+
+// SendAndListen sends a request to signald, listens for the response and returns it
+func (s *Signald) SendAndListen(request Request, success []string) (Response, error) {
+	if s.socket == nil {
+		if err := s.Connect(); err != nil {
+			return Response{}, s.MakeError(err)
+		}
+		defer s.Disconnect()
+	}
+
+	requestID, err := s.SendRequest(request)
+	if err != nil {
+		return Response{}, s.MakeError(err)
+	}
+
+	message, err := s.ListenFor(requestID)
+	if err != nil {
+		return message, s.MakeError(err)
+	}
+
+	for _, s := range success {
+		if message.Type == s {
+			return message, err
+		}
+	}
+
+	return message, s.MakeError(message)
+}
+
+// verbose print log message if Verbose is set taking into account JsonStatus
+func (s *Signald) verbose(logMsg string) {
+	if !s.Verbose {
+		return
+	}
+
+	if !s.StatusJSON {
+		log.Print(logMsg)
+		return
+	}
+
+	s.LogJSON = append(s.LogJSON, Response{
+		Type: "log",
+		Data: ResponseData{
+			Timestamp: time.Now().Format(time.RFC3339),
+			StatusMessage: StatusMessage{
+				Message: logMsg,
+			},
+		},
+	})
+}
+
+// MakeError make and return an error with the function name
+func (s *Signald) MakeError(err interface{}) error {
+	pc := make([]uintptr, 15)
+	n := runtime.Callers(2, pc)
+	frames := runtime.CallersFrames(pc[:n])
+	frame, _ := frames.Next()
+
+	var errFormat string
+	switch err.(type) {
+	case string:
+		errFormat = "%s"
+
+	case error:
+		errFormat = "%w"
+
+	case Response:
+		errFormat = "%s"
+		err = fmt.Sprintf("%s: %s", err.(Response).Type, err.(Response).Data.StatusMessage.Message)
+
+	default:
+		errFormat = "%+v"
+	}
+
+	return fmt.Errorf("%s:%d - "+errFormat, frame.Function, frame.Line, err)
 }

@@ -74,7 +74,7 @@ func (s *Signald) Listen(c chan RawResponse) {
 
 	for {
 		if message.Error = d.Decode(&message.JSON); message.Error != nil {
-			s.MakeError(message.Error)
+			message.Error = s.MakeError(message.Error)
 		}
 
 		c <- message

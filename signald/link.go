@@ -27,7 +27,7 @@ func (s *Signald) Link(deviceName string, uriOrQR bool) (Response, error) {
 		Type:       "link",
 		DeviceName: deviceName,
 		ID:         fmt.Sprintf("%t-signald-go-%s", uriOrQR, xid.New().String()),
-	}, []string{"linking_successful"})
+	}, []string{"linking_uri", "linking_successful"})
 
 	return message, err
 }

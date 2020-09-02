@@ -26,7 +26,7 @@ func (s *Signald) GetIdentities(username string, recipientAddress RequestAddress
 		Username: username,
 	}
 
-	if recipientAddress.Number != "" || recipientAddress.UUID != "" {
+	if (RequestAddress{}) == recipientAddress {
 		request.RecipientAddress = &recipientAddress
 	}
 

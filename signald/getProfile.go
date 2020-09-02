@@ -25,9 +25,11 @@ func (s *Signald) GetProfile(username string, recipientAddress RequestAddress) (
 		return Response{}, s.MakeError("recipientAddress is required")
 	}
 
-	return s.SendAndListen(Request{
-		Type:             "get_profile",
-		Username:         username,
-		RecipientAddress: &recipientAddress,
-	}, []string{"profile"})
+	return s.SendAndListen(
+		Request{
+			Type:             "get_profile",
+			Username:         username,
+			RecipientAddress: &recipientAddress,
+		},
+		[]string{"profile"})
 }

@@ -15,21 +15,17 @@
 
 package signald
 
-// GetUser represents the get_user command
-func (s *Signald) GetUser(username string, recipientAddress RequestAddress) (Response, error) {
+// Send represents the react command
+func (s *Signald) react(username string, reaction RequestReaction) (Response, error) {
 	if username == "" {
 		return Response{}, s.MakeError("username is required")
 	}
 
-	if recipientAddress.Number == "" && recipientAddress.UUID == "" {
-		return Response{}, s.MakeError("recipientAddress is required")
-	}
-
 	return s.SendAndListen(
 		Request{
-			Type:             "get_user",
-			Username:         username,
-			RecipientAddress: &recipientAddress,
+			Type:     "react",
+			Username: username,
+			Reaction: &reaction,
 		},
-		[]string{"user"})
+		[]string{"send_results"})
 }

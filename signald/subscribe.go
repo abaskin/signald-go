@@ -23,8 +23,10 @@ func (s *Signald) Subscribe(username string) (Response, error) {
 		return Response{}, s.MakeError("username is required")
 	}
 
-	return s.SendAndListen(Request{
-		Type:     "subscribe",
-		Username: username,
-	}, []string{"subscribed"})
+	return s.SendAndListen(
+		Request{
+			Type:     "subscribe",
+			Username: username,
+		},
+		[]string{"subscribed"})
 }

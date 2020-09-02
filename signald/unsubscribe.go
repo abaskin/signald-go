@@ -23,8 +23,10 @@ func (s *Signald) Unsubscribe(username string) (Response, error) {
 		return Response{}, s.MakeError("username is required")
 	}
 
-	return s.SendAndListen(Request{
-		Type:     "unsubscribe",
-		Username: username,
-	}, []string{"unsubscribed"})
+	return s.SendAndListen(
+		Request{
+			Type:     "unsubscribe",
+			Username: username,
+		},
+		[]string{"unsubscribed"})
 }

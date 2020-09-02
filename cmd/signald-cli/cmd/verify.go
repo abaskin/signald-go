@@ -22,6 +22,7 @@ import (
 var (
 	// username    string  see send.go
 	code string
+	pin  string
 )
 
 // verifyCmd represents the verify command
@@ -30,7 +31,7 @@ var verifyCmd = &cobra.Command{
 	Short: "Verify a new number",
 	Long:  `Completes the registration process, by providing a verification code sent after the register command. `,
 	Run: func(cmd *cobra.Command, args []string) {
-		message, err := s.Verify(username, code)
+		message, err := s.Verify(username, code, pin)
 
 		handleReturn(message, err, "")
 	},
@@ -43,4 +44,5 @@ func init() {
 	verifyCmd.MarkFlagRequired("username")
 	verifyCmd.Flags().StringVarP(&code, "code", "c", "", "The verification code, the - in the middle code is optional")
 	verifyCmd.MarkFlagRequired("code")
+	verifyCmd.Flags().StringVarP(&pin, "pin", "p", "", "The registration lock PIN, that was set by the user (Optional)")
 }

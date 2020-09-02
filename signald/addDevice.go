@@ -15,8 +15,8 @@
 
 package signald
 
-// addDevice Adds another device to a signal account that signald controls the master device on.
-func (s *Signald) addDevice(username string, uri string) (Response, error) {
+// AddDevice Adds another device to a signal account that signald controls the master device on.
+func (s *Signald) AddDevice(username string, uri string) (Response, error) {
 	if username == "" {
 		return Response{}, s.MakeError("username is required")
 	}
@@ -25,9 +25,11 @@ func (s *Signald) addDevice(username string, uri string) (Response, error) {
 		return Response{}, s.MakeError("uri is required")
 	}
 
-	return s.SendAndListen(Request{
-		Type:     "add_device",
-		Username: username,
-		URI:      uri,
-	}, []string{"device_added"})
+	return s.SendAndListen(
+		Request{
+			Type:     "add_device",
+			Username: username,
+			URI:      uri,
+		},
+		[]string{"device_added"})
 }

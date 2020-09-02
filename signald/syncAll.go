@@ -24,10 +24,12 @@ func (s *Signald) SyncAll(username string) (Response, error) {
 	var message Response
 	var err error
 	for _, t := range []string{"sync_contacts", "sync_groups", "sync_configuration"} {
-		message, err = s.SendAndListen(Request{
-			Type:     t,
-			Username: username,
-		}, []string{"sync_requested"})
+		message, err = s.SendAndListen(
+			Request{
+				Type:     t,
+				Username: username,
+			},
+			[]string{"sync_requested"})
 		if err != nil {
 			return message, err
 		}

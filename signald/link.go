@@ -23,11 +23,11 @@ import (
 
 // Link represents the link command
 func (s *Signald) Link(deviceName string, uriOrQR bool) (Response, error) {
-	message, err := s.SendAndListen(Request{
-		Type:       "link",
-		DeviceName: deviceName,
-		ID:         fmt.Sprintf("%t-signald-go-%s", uriOrQR, xid.New().String()),
-	}, []string{"linking_uri", "linking_successful"})
-
-	return message, err
+	return s.SendAndListen(
+		Request{
+			Type:       "link",
+			DeviceName: deviceName,
+			ID:         fmt.Sprintf("%t-signald-go-%s", uriOrQR, xid.New().String()),
+		},
+		[]string{"linking_uri", "linking_successful"})
 }

@@ -16,7 +16,7 @@
 package signald
 
 // Verify represents the verify command
-func (s *Signald) Verify(username string, code string) (Response, error) {
+func (s *Signald) Verify(username string, code string, pin string) (Response, error) {
 	if username == "" {
 		return Response{}, s.MakeError("username is required")
 	}
@@ -25,9 +25,12 @@ func (s *Signald) Verify(username string, code string) (Response, error) {
 		return Response{}, s.MakeError("code is required")
 	}
 
-	return s.SendAndListen(Request{
-		Type:     "verify",
-		Username: username,
-		Code:     code,
-	}, []string{"verification_succeeded"})
+	return s.SendAndListen(
+		Request{
+			Type:     "verify",
+			Username: username,
+			Code:     code,
+			Pin:      pin,
+		},
+		[]string{"verification_succeeded"})
 }

@@ -25,9 +25,11 @@ func (s *Signald) SetProfile(username string, name string) (Response, error) {
 		return Response{}, s.MakeError("name is required")
 	}
 
-	return s.SendAndListen(Request{
-		Type:     "set_profile",
-		Username: username,
-		Name:     name,
-	}, []string{"profile_set"})
+	return s.SendAndListen(
+		Request{
+			Type:     "set_profile",
+			Username: username,
+			Name:     name,
+		},
+		[]string{"profile_set"})
 }

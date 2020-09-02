@@ -39,7 +39,6 @@ var linkCmd = &cobra.Command{
 func init() {
 	RootCmd.AddCommand(linkCmd)
 
-	linkCmd.Flags().StringVarP(&deviceName, "deviceName", "d", "", "The device name")
-	linkCmd.MarkFlagRequired("deviceName")
+	linkCmd.Flags().StringVarP(&deviceName, "deviceName", "d", "", "The name to describe this new device")
 	linkCmd.Flags().BoolVarP(&uriOrQR, "uri", "u", false, "Print a URI instead of a QR code")
 }

@@ -21,9 +21,11 @@ func (s *Signald) LeaveGroup(username string, recipientGroupID string) (Response
 		return Response{}, s.MakeError("username is required")
 	}
 
-	return s.SendAndListen(Request{
-		Type:             "leave_group",
-		Username:         username,
-		RecipientGroupID: recipientGroupID,
-	}, []string{"left_group"})
+	return s.SendAndListen(
+		Request{
+			Type:             "leave_group",
+			Username:         username,
+			RecipientGroupID: recipientGroupID,
+		},
+		[]string{"left_group"})
 }

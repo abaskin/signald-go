@@ -21,8 +21,10 @@ func (s *Signald) ListGroups(username string) (Response, error) {
 		return Response{}, s.MakeError("username is required")
 	}
 
-	return s.SendAndListen(Request{
-		Type:     "list_groups",
-		Username: username,
-	}, []string{"group_list"})
+	return s.SendAndListen(
+		Request{
+			Type:     "list_groups",
+			Username: username,
+		},
+		[]string{"group_list"})
 }

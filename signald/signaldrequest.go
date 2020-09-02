@@ -74,6 +74,7 @@ type Request struct {
 	Timestamps       []int64             `json:"timestamps,omitempty"`
 	When             int64               `json:"when,omitempty"`
 	Reaction         *RequestReaction    `json:"reaction,omitempty"`
+	Pin              string              `json:"pin,omitempty"`
 }
 
 // RequestAttachment to a message attachhment sent to signald

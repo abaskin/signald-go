@@ -155,7 +155,8 @@ func (s *Signald) ListenFor(stopID string) (Response, error) {
 				"input_error",
 				"trust_failed",
 				"update_contact_error",
-				"linking_error":
+				"linking_error",
+				"verification_error":
 				json.Unmarshal(jsonData, &msg.Data.StatusMessage)
 				return msg, s.MakeError(msg)
 
@@ -198,10 +199,8 @@ func (s *Signald) SendAndListen(request Request, success []string) (Response, er
 	var err error
 
 	defer func() {
-		if r := recover(); r != nil {
-			if err != nil {
-				err = s.MakeError(r)
-			}
+		if r := recover(); r != nil && err != nil {
+			err = s.MakeError(r)
 		}
 	}()
 

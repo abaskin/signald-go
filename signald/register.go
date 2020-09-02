@@ -21,10 +21,12 @@ func (s *Signald) Register(username string, captcha string, voice bool) (Respons
 		return Response{}, s.MakeError("username is required")
 	}
 
-	return s.SendAndListen(Request{
-		Type:     "register",
-		Username: username,
-		Captcha:  captcha,
-		Voice:    voice,
-	}, []string{"verification_required"})
+	return s.SendAndListen(
+		Request{
+			Type:     "register",
+			Username: username,
+			Captcha:  captcha,
+			Voice:    voice,
+		},
+		[]string{"verification_required"})
 }

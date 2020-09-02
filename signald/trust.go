@@ -21,7 +21,7 @@ func (s *Signald) Trust(username string, recipientAddress RequestAddress, finger
 		return Response{}, s.MakeError("username is required")
 	}
 
-	if recipientAddress.Number == "" && recipientAddress.UUID == "" {
+	if (RequestAddress{}) == recipientAddress {
 		return Response{}, s.MakeError("recipientAddress is required")
 	}
 
@@ -29,10 +29,12 @@ func (s *Signald) Trust(username string, recipientAddress RequestAddress, finger
 		return Response{}, s.MakeError("fingerprint is required")
 	}
 
-	return s.SendAndListen(Request{
-		Type:             "trust",
-		Username:         username,
-		RecipientAddress: &recipientAddress,
-		Fingerprint:      fingerprint,
-	}, []string{"trusted_fingerprint", "trusted_safety_number"})
+	return s.SendAndListen(
+		Request{
+			Type:             "trust",
+			Username:         username,
+			RecipientAddress: &recipientAddress,
+			Fingerprint:      fingerprint,
+		},
+		[]string{"trusted_fingerprint", "trusted_safety_number"})
 }

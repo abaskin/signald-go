@@ -30,7 +30,7 @@ var addDeviceCmd = &cobra.Command{
 	Short: "Adds another device to a signal account that signald controls the master device",
 	Long:  `Adds another device to a signal account that signald controls the master device`,
 	Run: func(cmd *cobra.Command, args []string) {
-		message, err := s.Verify(username, uri)
+		message, err := s.AddDevice(username, uri)
 
 		handleReturn(message, err, "")
 	},

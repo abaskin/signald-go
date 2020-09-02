@@ -29,13 +29,13 @@ func (s *Signald) SetExpiration(username string, recipientAddress RequestAddress
 		return Response{}, s.MakeError("recipientNumber and recipientGroupId are mutually exclusive and one of them is required")
 	}
 
-	request := Request{
-		Type:             "set_expiration",
-		Username:         username,
-		RecipientAddress: &recipientAddress,
-		RecipientGroupID: recipientGroupID,
-		ExpiresInSeconds: expiresInSeconds,
-	}
-
-	return s.SendAndListen(request, []string{"expiration_updated"})
+	return s.SendAndListen(
+		Request{
+			Type:             "set_expiration",
+			Username:         username,
+			RecipientAddress: &recipientAddress,
+			RecipientGroupID: recipientGroupID,
+			ExpiresInSeconds: expiresInSeconds,
+		},
+		[]string{"expiration_updated"})
 }

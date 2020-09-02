@@ -26,15 +26,15 @@ func (s *Signald) UpdateContact(username string, number string, name string,
 		return Response{}, s.MakeError("number is required")
 	}
 
-	request := Request{
-		Type:     "update_contact",
-		Username: username,
-		Contact: &RequestContact{
-			Number: number,
-			Name:   name,
-			Color:  color,
+	return s.SendAndListen(
+		Request{
+			Type:     "update_contact",
+			Username: username,
+			Contact: &RequestContact{
+				Number: number,
+				Name:   name,
+				Color:  color,
+			},
 		},
-	}
-
-	return s.SendAndListen(request, []string{"contact_updated"})
+		[]string{"contact_updated"})
 }

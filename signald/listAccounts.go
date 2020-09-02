@@ -17,7 +17,9 @@ package signald
 
 // ListAccounts represents the listAccounts command
 func (s *Signald) ListAccounts() (Response, error) {
-	return s.SendAndListen(Request{
-		Type: "list_accounts",
-	}, []string{"account_list"})
+	return s.SendAndListen(
+		Request{
+			Type: "list_accounts",
+		},
+		[]string{"account_list"})
 }

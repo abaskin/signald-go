@@ -22,14 +22,14 @@ func (s *Signald) CreateGroup(username string, recipientGroupID string,
 		return Response{}, s.MakeError("username is required")
 	}
 
-	request := Request{
-		Type:             "update_group",
-		Username:         username,
-		RecipientGroupID: recipientGroupID,
-		GroupName:        groupName,
-		Avatar:           groupAvatar,
-		Members:          members,
-	}
-
-	return s.SendAndListen(request, []string{"group_created", "group_updated"})
+	return s.SendAndListen(
+		Request{
+			Type:             "update_group",
+			Username:         username,
+			RecipientGroupID: recipientGroupID,
+			GroupName:        groupName,
+			Avatar:           groupAvatar,
+			Members:          members,
+		},
+		[]string{"group_created", "group_updated"})
 }

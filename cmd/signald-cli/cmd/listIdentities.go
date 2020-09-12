@@ -25,11 +25,12 @@ import (
 
 // getIdentitiesCmd represents the listContacts command
 var getIdentitiesCmd = &cobra.Command{
-	Use:   "getIdentities",
-	Short: "Returns all known identities/keys for a specific number",
-	Long:  `Returns all known identities/keys for a specific number`,
+	Use:     "listIdentities",
+	Aliases: []string{"getIdentities"},
+	Short:   "Returns all known identities/keys for a specific number",
+	Long:    `Returns all known identities/keys for a specific number`,
 	Run: func(cmd *cobra.Command, args []string) {
-		message, err := s.GetIdentities(username, signald.RequestAddress{Number: recipientNumber})
+		message, err := s.ListIdentities(username, signald.RequestAddress{Number: recipientNumber})
 
 		identities := []string{}
 		for _, i := range message.Data.Identities {

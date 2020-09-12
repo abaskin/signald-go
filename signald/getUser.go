@@ -21,7 +21,7 @@ func (s *Signald) GetUser(username string, recipientAddress RequestAddress) (Res
 		return Response{}, s.MakeError("username is required")
 	}
 
-	if recipientAddress.Number == "" && recipientAddress.UUID == "" {
+	if recipientAddress.Empty() {
 		return Response{}, s.MakeError("recipientAddress is required")
 	}
 

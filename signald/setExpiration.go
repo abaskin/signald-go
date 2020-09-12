@@ -22,10 +22,8 @@ func (s *Signald) SetExpiration(username string, recipientAddress RequestAddress
 		return Response{}, s.MakeError("username is required")
 	}
 
-	recipientAddressEmpty := recipientAddress.Number == "" && recipientAddress.UUID == ""
-
-	if (recipientAddressEmpty && recipientGroupID == "") ||
-		(!recipientAddressEmpty && recipientGroupID != "") {
+	if (recipientAddress.Empty() && recipientGroupID == "") ||
+		(!recipientAddress.Empty() && recipientGroupID != "") {
 		return Response{}, s.MakeError("recipientNumber and recipientGroupId are mutually exclusive and one of them is required")
 	}
 

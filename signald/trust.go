@@ -21,7 +21,7 @@ func (s *Signald) Trust(username string, recipientAddress RequestAddress, finger
 		return Response{}, s.MakeError("username is required")
 	}
 
-	if (RequestAddress{}) == recipientAddress {
+	if recipientAddress.Empty() {
 		return Response{}, s.MakeError("recipientAddress is required")
 	}
 

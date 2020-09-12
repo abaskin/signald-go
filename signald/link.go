@@ -15,19 +15,21 @@
 
 package signald
 
-import (
-	"fmt"
-
-	"github.com/rs/xid"
-)
-
 // Link represents the link command
-func (s *Signald) Link(deviceName string, uriOrQR bool) (Response, error) {
+func (s *Signald) Link(deviceName string, requestID string) (Response, error) {
+	if requestID == "" {
+		return s.SendAndListen(
+			Request{
+				Type:       "link",
+				DeviceName: deviceName,
+			},
+			[]string{"linking_uri"})
+	}
+
 	return s.SendAndListen(
 		Request{
-			Type:       "link",
-			DeviceName: deviceName,
-			ID:         fmt.Sprintf("%t-signald-go-%s", uriOrQR, xid.New().String()),
+			Type: "",
+			ID:   requestID,
 		},
-		[]string{"linking_uri", "linking_successful"})
+		[]string{"linking_successful"})
 }

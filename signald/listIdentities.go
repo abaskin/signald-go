@@ -15,21 +15,22 @@
 
 package signald
 
-// GetProfile represents the get_user command
-func (s *Signald) GetProfile(username string, recipientAddress RequestAddress) (Response, error) {
+// ListIdentities represents the get_identities command
+func (s *Signald) ListIdentities(username string, recipientAddress RequestAddress) (Response, error) {
 	if username == "" {
 		return Response{}, s.MakeError("username is required")
 	}
 
-	if recipientAddress.Empty() {
-		return Response{}, s.MakeError("recipientAddress is required")
+	request := Request{
+		Type:     "get_identities",
+		Username: username,
 	}
 
-	return s.SendAndListen(
-		Request{
-			Type:             "get_profile",
-			Username:         username,
-			RecipientAddress: &recipientAddress,
-		},
-		[]string{"profile"})
+	if !recipientAddress.Empty() {
+		request.RecipientAddress = &recipientAddress
+	}
+
+	message, err := s.SendAndListen(request, []string{"identities"})
+
+	return message, err
 }

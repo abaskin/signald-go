@@ -16,6 +16,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/abaskin/signald-go/signald"
@@ -42,7 +43,8 @@ var receiveCmd = &cobra.Command{
 		for {
 			message = <-c
 
-			fmt.Println(message.Data)
+			jsonData, _ := json.Marshal(message)
+			fmt.Println(string(jsonData))
 
 			if message.Done {
 				return

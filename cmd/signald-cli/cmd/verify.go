@@ -42,7 +42,7 @@ func init() {
 
 	verifyCmd.Flags().StringVarP(&username, "username", "u", "", "The username of the account")
 	verifyCmd.MarkFlagRequired("username")
-	verifyCmd.Flags().StringVarP(&code, "code", "c", "", "The verification code, the - in the middle code is optional")
+	verifyCmd.Flags().StringVarP(&code, "code", "c", "", "The verification code, the - in the middle of the code is optional")
 	verifyCmd.MarkFlagRequired("code")
-	verifyCmd.Flags().StringVarP(&pin, "pin", "p", "", "The registration lock PIN, that was set by the user (Optional)")
+	verifyCmd.Flags().StringVarP(&pin, "pin", "p", "", "The registration lock PIN that was set by the user (Optional)")
 }

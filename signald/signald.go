@@ -16,16 +16,13 @@
 package signald
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"runtime"
-	"strings"
 	"time"
 
-	"github.com/mdp/qrterminal"
 	"github.com/rs/xid"
 )
 
@@ -36,6 +33,11 @@ type Signald struct {
 	Verbose    bool
 	StatusJSON bool
 	LogJSON    []Response
+}
+
+// IsConnected check to see if the socket is connected
+func (s *Signald) IsConnected() bool {
+	return s.socket != nil
 }
 
 // Connect connects to the signald socket
@@ -73,9 +75,7 @@ func (s *Signald) Listen(c chan RawResponse) {
 	message := RawResponse{}
 
 	for {
-		if message.Error = d.Decode(&message.JSON); message.Error != nil {
-			message.Error = s.MakeError(message.Error)
-		}
+		message.Error = s.MakeError(d.Decode(&message))
 
 		c <- message
 
@@ -92,86 +92,22 @@ func (s *Signald) ListenFor(stopID string) (Response, error) {
 	go s.Listen(cs)
 
 	for {
-		msg := Response{}
-
 		message := <-cs
 
 		if message.Error != nil {
 			return Response{}, s.MakeError(message.Error)
 		}
 
-		msg.ID = fmt.Sprintf("%s", message.JSON["id"])
-		if msg.ID == stopID {
-			msg.Type = fmt.Sprintf("%s", message.JSON["type"])
+		if message.ID == stopID {
+			response := Response{}
 
-			msgData, haveData := message.JSON["data"]
-			jsonData, _ := json.Marshal(msgData)
-
-			switch msg.Type {
-			case "send_results":
-				json.Unmarshal(jsonData, &msg.Data.SendResults)
-
-			case "user":
-				json.Unmarshal(jsonData, &msg.Data.UserDetails)
-
-			case "account_list":
-				json.Unmarshal(jsonData, &msg.Data.Accounts)
-
-			case "contact_list":
-				json.Unmarshal(jsonData, &msg.Data.Contacts)
-
-			case "group_list":
-				json.Unmarshal(jsonData, &msg.Data.Groups)
-
-			case "identities":
-				json.Unmarshal(jsonData, &msg.Data.Identities)
-
-			case "profile":
-				json.Unmarshal(jsonData, &msg.Data.Profile)
-
-			case
-				"profile_not_available",
-				"user_not_registered":
-				return msg, s.MakeError(msg.Type)
-
-			case "linking_uri":
-				json.Unmarshal(jsonData, &msg.Data)
-				b := bytes.NewBufferString(string(jsonData))
-				if strings.HasPrefix(msg.ID, "false") {
-					b.Reset()
-					qrterminal.Generate(string(jsonData), qrterminal.M, b)
-				}
-				msg.Data.StatusMessage.Error = false
-				msg.Data.StatusMessage.Message = b.String()
-
-			case
-				"verification_required",
-				"verification_succeeded",
-				"linking_successful":
-				json.Unmarshal(jsonData, &msg.Data.Accounts[0])
-
-			case
-				"unexpected_error",
-				"input_error",
-				"trust_failed",
-				"update_contact_error",
-				"linking_error",
-				"verification_error":
-				json.Unmarshal(jsonData, &msg.Data.StatusMessage)
-				return msg, s.MakeError(msg)
-
-			case "error":
-				msg.Data.StatusMessage.Error = true
-				msg.Data.StatusMessage.Message = msgData.(string)
-				return msg, s.MakeError(msg)
-
-			default:
-				if haveData {
-					json.Unmarshal(jsonData, &msg.Data.StatusMessage)
-				}
+			jsonData, _ := json.Marshal(message)
+			json.Unmarshal(jsonData, &response)
+			if response.Data.StatusMessage.Error {
+				return response, s.MakeError(response)
 			}
 
-			return msg, nil
+			return response, nil
 		}
 	}
 }
@@ -187,7 +123,6 @@ func (s *Signald) SendRequest(request Request) (string, error) {
 	b, err := json.Marshal(request)
 	if err == nil {
 		s.verbose("Sending " + string(b))
-
 		err = json.NewEncoder(s.socket).Encode(request)
 	}
 
@@ -199,12 +134,12 @@ func (s *Signald) SendAndListen(request Request, success []string) (Response, er
 	var err error
 
 	defer func() {
-		if r := recover(); r != nil && err != nil {
+		if r := recover(); r != nil && err == nil {
 			err = s.MakeError(r)
 		}
 	}()
 
-	if s.socket == nil {
+	if !s.IsConnected() {
 		if err = s.Connect(); err != nil {
 			err = s.MakeError(err)
 			return Response{}, err
@@ -212,28 +147,29 @@ func (s *Signald) SendAndListen(request Request, success []string) (Response, er
 		defer s.Disconnect()
 	}
 
-	requestID := ""
-	requestID, err = s.SendRequest(request)
-	if err != nil {
-		err = s.MakeError(err)
-		return Response{}, err
+	if request.Type != "" {
+		request.ID, err = s.SendRequest(request)
+		if err != nil {
+			err = s.MakeError(err)
+			return Response{}, err
+		}
 	}
 
-	message := Response{}
-	message, err = s.ListenFor(requestID)
+	response := Response{}
+	response, err = s.ListenFor(request.ID)
 	if err != nil {
 		err = s.MakeError(err)
 		return Response{}, err
 	}
 
 	for _, s := range success {
-		if message.Type == s {
-			return message, err
+		if response.Type == s {
+			return response, err
 		}
 	}
 
-	err = s.MakeError(message)
-	return message, err
+	err = s.MakeError(response)
+	return response, err
 }
 
 // verbose print log message if Verbose is set taking into account JsonStatus
@@ -243,7 +179,7 @@ func (s *Signald) verbose(logMsg string) {
 	}
 
 	if !s.StatusJSON {
-		log.Print(logMsg)
+		log.Println(logMsg)
 		return
 	}
 
@@ -260,6 +196,10 @@ func (s *Signald) verbose(logMsg string) {
 
 // MakeError make and return an error with the function name
 func (s *Signald) MakeError(err interface{}) error {
+	if err == nil {
+		return nil
+	}
+
 	pc := make([]uintptr, 15)
 	n := runtime.Callers(2, pc)
 	frames := runtime.CallersFrames(pc[:n])

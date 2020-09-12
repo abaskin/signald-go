@@ -15,22 +15,28 @@
 
 package signald
 
-// GetIdentities represents the get_identities command
-func (s *Signald) GetIdentities(username string, recipientAddress RequestAddress) (Response, error) {
+// MarkRead represents the listGroups command
+func (s *Signald) MarkRead(username string, when int64, timeStamps []int64) (Response, error) {
 	if username == "" {
 		return Response{}, s.MakeError("username is required")
 	}
 
-	request := Request{
-		Type:     "get_identities",
-		Username: username,
+	if len(timeStamps) == 0 {
+		return Response{}, s.MakeError("timeStamps are required")
 	}
 
-	if (RequestAddress{}) == recipientAddress {
-		request.RecipientAddress = &recipientAddress
-	}
+	message, err := s.SendAndListen(
+		Request{
+			Type:       "",
+			Username:   username,
+			When:       when,
+			Timestamps: timeStamps,
+		},
+		[]string{"marked_read", "untrusted_identity"})
 
-	message, err := s.SendAndListen(request, []string{"identities"})
+	if err == nil && message.Type == "untrusted_identity" {
+		err = s.MakeError("Untrusted Identity, see Response for details")
+	}
 
 	return message, err
 }

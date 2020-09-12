@@ -2,31 +2,35 @@ package signald
 
 // Response is a response to a request to signald, or a new inbound message
 type Response struct {
+	Type  string
 	ID    string
 	Data  ResponseData
-	Type  string
-	Error error `json:"Error,omitempty"`
+	Error error `json:"error,omitempty"`
 }
 
 // RawResponse is a response to a request to signald, or a new inbound message
 type RawResponse struct {
-	JSON  map[string]interface{}
-	Data  string
-	Error error
-	Done  bool
+	Type  string
+	ID    string
+	Data  interface{}
+	Error error `json:"error,omitempty"`
+	Done  bool  `json:"done,omitempty"`
 }
 
 // ResponseData is where most of the data in the response is stored.
 type ResponseData struct {
-	Groups        []Group
-	Accounts      []Account
-	Contacts      []ContactInfo
-	Identities    []Identity
-	SendResults   []SendResult
-	StatusMessage StatusMessage
-	UserDetails   ContactTokenDetails
-	Profile       Profile
-	Timestamp     string
+	Groups                     []Group
+	Accounts                   []Account
+	Contacts                   []ContactInfo
+	Identities                 []Identity
+	SendResults                []SendResult
+	StatusMessage              StatusMessage
+	ContactTokenDetails        ContactTokenDetails
+	Profile                    Profile
+	Version                    Version
+	UntrustedIdentityException UntrustedIdentityException
+	URI                        string
+	Timestamp                  string `json:"timestamp,omitempty"`
 }
 
 // Group represents a group in signal
@@ -113,4 +117,21 @@ type Profile struct {
 	IdentityKey                    string `json:"identity_key"`
 	UnidentifiedAccess             string `json:"unidentified_access"`
 	UnrestrictedUnidentifiedAccess bool   `json:"unrestricted_unidentified_access"`
+}
+
+// Version signald version
+type Version struct {
+	Name    string
+	Version string
+	Branch  string
+	Commit  string
+}
+
+// UntrustedIdentityException returned on error by mark_read
+type UntrustedIdentityException struct {
+	LocalAddress  RequestAddress `json:"local_address "`
+	RemoteAddress RequestAddress `json:"remote_address"`
+	Fingerprint   string
+	SafetyNumber  string `json:"safety_number"`
+	Request       Request
 }

@@ -31,8 +31,8 @@ var getUserCmd = &cobra.Command{
 		message, err := s.GetUser(username, signald.RequestAddress{Number: recipientNumber})
 
 		handleReturn(message, err, fmt.Sprintf("Token: %s Number: %s Voice: %t Video: %t",
-			message.Data.UserDetails.Token, message.Data.UserDetails.Number,
-			message.Data.UserDetails.Voice, message.Data.UserDetails.Video))
+			message.Data.ContactTokenDetails.Token, message.Data.ContactTokenDetails.Number,
+			message.Data.ContactTokenDetails.Voice, message.Data.ContactTokenDetails.Video))
 	},
 }
 

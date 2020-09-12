@@ -16,6 +16,11 @@
 package cmd
 
 import (
+	"bytes"
+	"fmt"
+
+	"github.com/abaskin/signald-go/signald"
+	"github.com/mdp/qrterminal"
 	"github.com/spf13/cobra"
 )
 
@@ -30,7 +35,33 @@ var linkCmd = &cobra.Command{
 	Short: "Link to an existing Signal account",
 	Long:  `Get a URI or QR code to link to an existing Signal account`,
 	Run: func(cmd *cobra.Command, args []string) {
-		message, err := s.Link(deviceName, uriOrQR)
+		// We need to handle the socket connection so it stays up between function
+		// calls.
+		if !s.IsConnected() {
+			if err := s.Connect(); err != nil {
+				err = s.MakeError(err)
+				handleReturn(signald.Response{}, err, "")
+			}
+			defer s.Disconnect()
+		}
+
+		// First we call Link which returns the URI. Print out the URI or QRCode
+		// so it can be entered onto the device.
+		message, err := s.Link(deviceName, "")
+		if err != nil {
+			handleReturn(message, err, "")
+		}
+
+		outCode := message.Data.URI
+		if !uriOrQR {
+			b := bytes.NewBufferString(message.Data.URI)
+			qrterminal.Generate(outCode, qrterminal.M, b)
+		}
+		fmt.Println(outCode)
+
+		// call Link a second time with the returned request ID to get the status
+		// of the link attempt.
+		message, err = s.Link(deviceName, message.ID)
 
 		handleReturn(message, err, "")
 	},

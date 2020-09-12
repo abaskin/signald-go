@@ -115,6 +115,11 @@ type RequestAddress struct {
 	UUID   string `json:"uuid,omitempty"`
 }
 
+// Empty check if the RequestAddress is empty
+func (r *RequestAddress) Empty() bool {
+	return r.Number == "" && r.UUID == ""
+}
+
 // RequestReaction reaction info
 type RequestReaction struct {
 	Emoji               string         `json:"emoji,omitempty"`

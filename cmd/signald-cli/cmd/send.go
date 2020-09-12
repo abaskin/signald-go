@@ -71,7 +71,15 @@ var sendCmd = &cobra.Command{
 		message, err := s.Send(username, signald.RequestAddress{Number: toUser},
 			toGroup, messageBody, attachments, quoteObj)
 
-		handleReturn(message, err, "")
+		result := []string{}
+		for _, r := range message.Data.SendResults {
+			result = append(result, fmt.Sprintf(
+				"Address %s Success-Unidentified %t Success-NeedsSync %t NetworkFailure %t UnregisteredFailure %t",
+				r.Address.Number, r.Success.Unidentified, r.Success.NeedsSync,
+				r.NetworkFailure, r.UnregisteredFailure))
+		}
+
+		handleReturn(message, err, strings.Join(result, "\n"))
 	},
 }
 

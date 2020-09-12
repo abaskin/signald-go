@@ -16,7 +16,6 @@
 package signald
 
 import (
-	"encoding/json"
 	"time"
 )
 
@@ -33,7 +32,7 @@ func (s *Signald) Receive(c chan RawResponse, stopC chan struct{}, username stri
 		return
 	}
 
-	if s.socket == nil {
+	if !s.IsConnected() {
 		if message.Error = s.Connect(); message.Error != nil {
 			c <- message
 			return
@@ -52,7 +51,7 @@ func (s *Signald) Receive(c chan RawResponse, stopC chan struct{}, username stri
 		}()
 	}
 
-	jsonSlice := []map[string]interface{}{}
+	jsonSlice := []RawResponse{}
 	cs := make(chan RawResponse)
 	go s.Listen(cs)
 	for {
@@ -66,28 +65,23 @@ func (s *Signald) Receive(c chan RawResponse, stopC chan struct{}, username stri
 			}
 
 			if returnJSON && timeOut != 0 {
-				jsonSlice = append(jsonSlice, message.JSON)
+				jsonSlice = append(jsonSlice, message)
 				continue
 			}
-
-			jsonData, _ := json.Marshal(message.JSON)
-			message.Data = string(jsonData)
 
 			c <- message
 
 		default:
 			if done {
-				message = RawResponse{
-					Done: true,
-					JSON: map[string]interface{}{
-						"Data": jsonSlice,
-					},
+				if returnJSON && timeOut != 0 {
+					message = RawResponse{
+						Type: "receive_results",
+						Done: true,
+						Data: jsonSlice,
+					}
+
+					c <- message
 				}
-
-				jsonData, _ := json.Marshal(message.JSON)
-				message.Data = string(jsonData)
-
-				c <- message
 
 				return
 			}

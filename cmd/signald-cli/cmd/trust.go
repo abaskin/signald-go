@@ -28,11 +28,7 @@ var trustCmd = &cobra.Command{
 	Short: "Checks whether a contact is currently registered with the server",
 	Long:  `Checks whether a contact is currently registered with the server. Returns the contact's registration state.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		recipientAddress := signald.RequestAddress{
-			Number: recipientNumber,
-		}
-
-		message, err := s.Trust(username, recipientAddress, fingerprint)
+		message, err := s.Trust(username, signald.RequestAddress{Number: recipientNumber}, fingerprint)
 
 		handleReturn(message, err, "")
 	},

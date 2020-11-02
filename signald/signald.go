@@ -16,13 +16,13 @@
 package signald
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"runtime"
 	"time"
 
+	jsoniter "github.com/json-iterator/go"
 	"github.com/rs/xid"
 )
 
@@ -56,21 +56,20 @@ func (s *Signald) Connect() error {
 
 // Disconnect disconnects from the signald socket
 func (s *Signald) Disconnect() error {
-	socketPath := s.socket.RemoteAddr().String()
 	if err := s.socket.Close(); err != nil {
 		s.verbose("Disconnect Error: " + err.Error())
 		return s.MakeError(err)
 	}
 
 	s.socket = nil
-	s.verbose("Disconnected from signald socket" + socketPath)
+	s.verbose("Disconnected from signald socket" + s.SocketPath)
 
 	return nil
 }
 
 // Listen listens for events from signald
 func (s *Signald) Listen(c chan RawResponse) {
-	d := json.NewDecoder(s.socket)
+	d := jsoniter.NewDecoder(s.socket)
 
 	message := RawResponse{}
 
@@ -85,8 +84,7 @@ func (s *Signald) Listen(c chan RawResponse) {
 	}
 }
 
-// ListenFor listens for events from signald, stops when ID is found and
-// populates the returned Response object as required
+// ListenFor listens for events from signald and stops when the passed ID is found
 func (s *Signald) ListenFor(stopID string) (Response, error) {
 	cs := make(chan RawResponse)
 	go s.Listen(cs)
@@ -101,8 +99,9 @@ func (s *Signald) ListenFor(stopID string) (Response, error) {
 		if message.ID == stopID {
 			response := Response{}
 
-			jsonData, _ := json.Marshal(message)
-			json.Unmarshal(jsonData, &response)
+			jsonData, _ := jsoniter.Marshal(message)
+			jsoniter.Unmarshal(jsonData, &response)
+
 			if response.Data.StatusMessage.Error {
 				return response, s.MakeError(response)
 			}
@@ -120,16 +119,17 @@ func (s *Signald) SendRequest(request Request) (string, error) {
 
 	s.verbose("Request ID: " + request.ID)
 
-	b, err := json.Marshal(request)
+	b, err := jsoniter.Marshal(request)
 	if err == nil {
 		s.verbose("Sending " + string(b))
-		err = json.NewEncoder(s.socket).Encode(request)
+		err = jsoniter.NewEncoder(s.socket).Encode(request)
 	}
 
 	return request.ID, err
 }
 
-// SendAndListen sends a request to signald, listens for the response and returns it
+// SendAndListen sends a request to signald, listens for the response and returns it.
+// If the request type is empty only listen (used by link).
 func (s *Signald) SendAndListen(request Request, success []string) (Response, error) {
 	var err error
 
